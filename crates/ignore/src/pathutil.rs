@@ -12,7 +12,7 @@ pub(crate) fn is_hidden(dent: &DirEntry) -> bool {
     use std::os::unix::ffi::OsStrExt;
 
     if let Some(name) = file_name(dent.path()) {
-        name.as_bytes().get(0) == Some(&b'.')
+        name.as_bytes().first() == Some(&b'.')
     } else {
         false
     }
@@ -71,7 +71,7 @@ pub(crate) fn strip_prefix<'a, P: AsRef<Path> + ?Sized>(
     if prefix.len() > path.len() || prefix != &path[0..prefix.len()] {
         None
     } else {
-        Some(&Path::new(OsStr::from_bytes(&path[prefix.len()..])))
+        Some(Path::new(OsStr::from_bytes(&path[prefix.len()..])))
     }
 }
 
@@ -110,9 +110,9 @@ pub(crate) fn is_file_name<P: AsRef<Path>>(path: P) -> bool {
 /// If the path terminates in ., .., or consists solely of a root of prefix,
 /// file_name will return None.
 #[cfg(unix)]
-pub(crate) fn file_name<'a, P: AsRef<Path> + ?Sized>(
-    path: &'a P,
-) -> Option<&'a OsStr> {
+pub(crate) fn file_name<P: AsRef<Path> + ?Sized>(
+    path: &P,
+) -> Option<&OsStr> {
     use memchr::memrchr;
     use std::os::unix::ffi::OsStrExt;
 
@@ -123,7 +123,7 @@ pub(crate) fn file_name<'a, P: AsRef<Path> + ?Sized>(
         return None;
     } else if path.last() == Some(&b'.') {
         return None;
-    } else if path.len() >= 2 && &path[path.len() - 2..] == &b".."[..] {
+    } else if path.len() >= 2 && path[path.len() - 2..] == b".."[..] {
         return None;
     }
     let last_slash = memrchr(b'/', path).map(|i| i + 1).unwrap_or(0);

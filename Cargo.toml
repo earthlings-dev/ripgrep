@@ -25,7 +25,7 @@ exclude = [
 build = "build.rs"
 autotests = false
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.93"
 
 [[bin]]
 bench = false
@@ -50,22 +50,22 @@ members = [
 ]
 
 [dependencies]
-anyhow = "1.0.75"
-bstr = "1.7.0"
+anyhow = "1.0.100"
+bstr = "1.12.1"
 grep = { version = "0.4.1", path = "crates/grep" }
 ignore = { version = "0.4.24", path = "crates/ignore" }
-lexopt = "0.3.0"
-log = "0.4.5"
-serde_json = "1.0.23"
-termcolor = "1.1.0"
-textwrap = { version = "0.16.0", default-features = false }
+lexopt = "0.3.1"
+log = "0.4.29"
+serde_json = "1.0.149"
+termcolor = "1.4.1"
+textwrap = { version = "0.16.2", default-features = false }
 
 [target.'cfg(all(target_env = "musl", target_pointer_width = "64"))'.dependencies.tikv-jemallocator]
-version = "0.6.0"
+version = "0.6.1"
 
 [dev-dependencies]
-serde = "1.0.77"
-serde_derive = "1.0.77"
+serde = "1.0.228"
+serde_derive = "1.0.228"
 walkdir = "2"
 
 [features]

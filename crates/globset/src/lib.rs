@@ -204,7 +204,7 @@ impl std::error::Error for Error {
 impl Error {
     /// Return the glob that caused this error, if one exists.
     pub fn glob(&self) -> Option<&str> {
-        self.glob.as_ref().map(|s| &**s)
+        self.glob.as_deref()
     }
 
     /// Return the kind of this error.
@@ -638,12 +638,12 @@ impl<'a> Candidate<'a> {
     }
 
     fn path_prefix(&self, max: usize) -> &[u8] {
-        if self.path.len() <= max { &*self.path } else { &self.path[..max] }
+        if self.path.len() <= max { &self.path } else { &self.path[..max] }
     }
 
     fn path_suffix(&self, max: usize) -> &[u8] {
         if self.path.len() <= max {
-            &*self.path
+            &self.path
         } else {
             &self.path[self.path.len() - max..]
         }
@@ -864,7 +864,7 @@ impl RequiredExtensionStrategy {
         match self.0.get(candidate.ext.as_bytes()) {
             None => false,
             Some(regexes) => {
-                for &(_, ref re) in regexes {
+                for (_, re) in regexes {
                     if re.is_match(candidate.path.as_bytes()) {
                         return true;
                     }

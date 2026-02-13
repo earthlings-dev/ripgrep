@@ -212,12 +212,11 @@ impl Ignore {
         let mut ig = self.clone();
         for parent in parents.into_iter().rev() {
             let mut compiled = self.0.compiled.write().unwrap();
-            if let Some(weak) = compiled.get(parent.as_os_str()) {
-                if let Some(prebuilt) = weak.upgrade() {
+            if let Some(weak) = compiled.get(parent.as_os_str())
+                && let Some(prebuilt) = weak.upgrade() {
                     ig = Ignore(prebuilt);
                     continue;
                 }
-            }
             let (mut igtmp, err) = ig.add_child_path(parent);
             errs.maybe_push(err);
             igtmp.is_absolute_parent = true;
@@ -271,8 +270,8 @@ impl Ignore {
             Gitignore::empty()
         } else {
             let (m, err) = create_gitignore(
-                &dir,
-                &dir,
+                dir,
+                dir,
                 &self.0.custom_ignore_filenames,
                 self.0.opts.ignore_case_insensitive,
             );
@@ -283,8 +282,8 @@ impl Ignore {
             Gitignore::empty()
         } else {
             let (m, err) = create_gitignore(
-                &dir,
-                &dir,
+                dir,
+                dir,
                 &[".ignore"],
                 self.0.opts.ignore_case_insensitive,
             );
@@ -295,8 +294,8 @@ impl Ignore {
             Gitignore::empty()
         } else {
             let (m, err) = create_gitignore(
-                &dir,
-                &dir,
+                dir,
+                dir,
                 &[".gitignore"],
                 self.0.opts.ignore_case_insensitive,
             );
@@ -310,7 +309,7 @@ impl Ignore {
             match resolve_git_commondir(dir, git_type) {
                 Ok(git_dir) => {
                     let (m, err) = create_gitignore(
-                        &dir,
+                        dir,
                         &git_dir,
                         &["info/exclude"],
                         self.0.opts.ignore_case_insensitive,
@@ -470,8 +469,8 @@ impl Ignore {
             }
             saw_git = saw_git || ig.0.has_git;
         }
-        if self.0.opts.parents {
-            if let Some(abs_parent_path) = self.absolute_base() {
+        if self.0.opts.parents
+            && let Some(abs_parent_path) = self.absolute_base() {
                 // What we want to do here is take the absolute base path of
                 // this directory and join it with the path we're searching.
                 // The main issue we want to avoid is accidentally duplicating
@@ -531,17 +530,16 @@ impl Ignore {
                     saw_git = saw_git || ig.0.has_git;
                 }
             }
-        }
         for gi in self.0.explicit_ignores.iter().rev() {
             if !m_explicit.is_none() {
                 break;
             }
-            m_explicit = gi.matched(&path, is_dir).map(IgnoreMatch::gitignore);
+            m_explicit = gi.matched(path, is_dir).map(IgnoreMatch::gitignore);
         }
         let m_global = if any_git {
             self.0
                 .git_global_matcher
-                .matched(&path, is_dir)
+                .matched(path, is_dir)
                 .map(IgnoreMatch::gitignore)
         } else {
             Match::None
@@ -895,7 +893,7 @@ fn resolve_git_commondir(
 ) -> Result<PathBuf, Option<Error>> {
     let git_dir_path = || dir.join(".git");
     let git_dir = git_dir_path();
-    if !git_type.map_or(false, |ft| ft.is_file()) {
+    if !git_type.is_some_and(|ft| ft.is_file()) {
         return Ok(git_dir);
     }
     let file = match File::open(git_dir) {

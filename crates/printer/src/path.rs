@@ -148,7 +148,7 @@ pub struct PathPrinter<W> {
 impl<W: WriteColor> PathPrinter<W> {
     /// Write the given path to the underlying writer.
     pub fn write(&mut self, path: &Path) -> io::Result<()> {
-        let ppath = PrinterPath::new(path.as_ref())
+        let ppath = PrinterPath::new(path)
             .with_separator(self.config.separator);
         if !self.wtr.supports_color() {
             self.wtr.write_all(ppath.as_bytes())?;

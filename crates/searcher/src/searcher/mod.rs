@@ -703,7 +703,7 @@ impl Searcher {
             MultiLine::new(
                 self,
                 matcher,
-                &*self.multi_line_buffer.borrow(),
+                &self.multi_line_buffer.borrow(),
                 write_to,
             )
             .run()
@@ -752,13 +752,13 @@ impl Searcher {
             MultiLine::new(
                 self,
                 matcher,
-                &*self.multi_line_buffer.borrow(),
+                &self.multi_line_buffer.borrow(),
                 write_to,
             )
             .run()
         } else {
             let mut line_buffer = self.line_buffer.borrow_mut();
-            let rdr = LineBufferReader::new(decoder, &mut *line_buffer);
+            let rdr = LineBufferReader::new(decoder, &mut line_buffer);
             log::trace!("generic reader: searching via roll buffer strategy");
             ReadByLine::new(self, matcher, rdr, write_to).run()
         }
@@ -897,11 +897,10 @@ impl Searcher {
         if !self.multi_line() {
             return false;
         }
-        if let Some(line_term) = matcher.line_terminator() {
-            if line_term == self.line_terminator() {
+        if let Some(line_term) = matcher.line_terminator()
+            && line_term == self.line_terminator() {
                 return false;
             }
-        }
         if let Some(non_matching) = matcher.non_matching_bytes() {
             // If the line terminator is CRLF, we don't actually need to care
             // whether the regex can match `\r` or not. Namely, a `\r` is
@@ -962,7 +961,7 @@ impl Searcher {
             let cap =
                 file.metadata().map(|m| m.len() as usize + 1).unwrap_or(0);
             buf.reserve(cap);
-            read_from.read_to_end(&mut *buf).map_err(S::Error::error_io)?;
+            read_from.read_to_end(&mut buf).map_err(S::Error::error_io)?;
             return Ok(());
         }
         self.fill_multi_line_buffer_from_reader::<_, S>(read_from)
@@ -987,7 +986,7 @@ impl Searcher {
             Some(heap_limit) => heap_limit,
             None => {
                 read_from
-                    .read_to_end(&mut *buf)
+                    .read_to_end(&mut buf)
                     .map_err(S::Error::error_io)?;
                 return Ok(());
             }

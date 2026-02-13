@@ -944,7 +944,7 @@ impl HyperlinkPath {
 /// list to users. This will cause special aliases like `none` and `default` to
 /// appear first.
 pub fn hyperlink_aliases() -> Vec<HyperlinkAlias> {
-    HYPERLINK_PATTERN_ALIASES.iter().cloned().collect()
+    HYPERLINK_PATTERN_ALIASES.to_vec()
 }
 
 #[cfg(test)]

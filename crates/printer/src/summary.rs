@@ -681,15 +681,14 @@ impl<'p, 's, M: Matcher, W: WriteColor> Sink for SummarySink<'p, 's, M, W> {
         searcher: &Searcher,
         binary_byte_offset: u64,
     ) -> Result<bool, io::Error> {
-        if searcher.binary_detection().quit_byte().is_some() {
-            if let Some(ref path) = self.path {
+        if searcher.binary_detection().quit_byte().is_some()
+            && let Some(ref path) = self.path {
                 log::debug!(
                     "ignoring {path}: found binary data at \
                      offset {binary_byte_offset}",
                     path = path.as_path().display(),
                 );
             }
-        }
         Ok(true)
     }
 
@@ -796,7 +795,7 @@ mod tests {
 
     use super::{Summary, SummaryBuilder, SummaryKind};
 
-    const SHERLOCK: &'static [u8] = b"\
+    const SHERLOCK: &[u8] = b"\
 For the Doctor Watsons of this world, as opposed to the Sherlock
 Holmeses, success in the province of detective work must always
 be, to a very large extent, the result of luck. Sherlock Holmes

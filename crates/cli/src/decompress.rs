@@ -57,13 +57,13 @@ impl DecompressionMatcherBuilder {
         let mut commands = vec![];
         for decomp_cmd in defaults.iter().chain(&self.commands) {
             let glob = Glob::new(&decomp_cmd.glob).map_err(|err| {
-                CommandError::io(io::Error::new(io::ErrorKind::Other, err))
+                CommandError::io(io::Error::other(err))
             })?;
             glob_builder.add(glob);
             commands.push(decomp_cmd.clone());
         }
         let globs = glob_builder.build().map_err(|err| {
-            CommandError::io(io::Error::new(io::ErrorKind::Other, err))
+            CommandError::io(io::Error::other(err))
         })?;
         Ok(DecompressionMatcher { globs, commands })
     }
@@ -461,8 +461,7 @@ fn try_resolve_binary<P: AsRef<Path>>(
     }
     let Some(syspaths) = env::var_os("PATH") else {
         let msg = "system PATH environment variable not found";
-        return Err(CommandError::io(io::Error::new(
-            io::ErrorKind::Other,
+        return Err(CommandError::io(io::Error::other(
             msg,
         )));
     };
@@ -484,7 +483,7 @@ fn try_resolve_binary<P: AsRef<Path>>(
         }
     }
     let msg = format!("{}: could not find executable in PATH", prog.display());
-    return Err(CommandError::io(io::Error::new(io::ErrorKind::Other, msg)));
+    Err(CommandError::io(io::Error::other(msg)))
 }
 
 fn default_decompression_commands() -> Vec<DecompressionCommand> {

@@ -2,7 +2,7 @@ use std::path::Path;
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 
-const IGNORE_FILE: &'static str =
+const IGNORE_FILE: &str =
     "tests/gitignore_matched_path_or_any_parents_tests.gitignore";
 
 fn get_gitignore() -> Gitignore {

@@ -28,7 +28,7 @@ pub fn interpolate<A, N>(
                 replacement = &replacement[i..];
             }
         }
-        if replacement.get(1).map_or(false, |&b| b == b'$') {
+        if replacement.get(1).is_some_and(|&b| b == b'$') {
             dst.push(b'$');
             replacement = &replacement[2..];
             continue;
@@ -106,7 +106,7 @@ fn find_cap_ref(replacement: &[u8]) -> Option<CaptureRef<'_>> {
         i += 1;
     }
     let mut cap_end = i;
-    while replacement.get(cap_end).map_or(false, is_valid_cap_letter) {
+    while replacement.get(cap_end).is_some_and(is_valid_cap_letter) {
         cap_end += 1;
     }
     if cap_end == i {
@@ -119,7 +119,7 @@ fn find_cap_ref(replacement: &[u8]) -> Option<CaptureRef<'_>> {
     let cap = std::str::from_utf8(&replacement[i..cap_end])
         .expect("valid UTF-8 capture name");
     if brace {
-        if !replacement.get(cap_end).map_or(false, |&b| b == b'}') {
+        if replacement.get(cap_end).is_none_or(|&b| b != b'}') {
             return None;
         }
         cap_end += 1;

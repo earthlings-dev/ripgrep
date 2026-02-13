@@ -85,7 +85,7 @@ mod tests {
         let string = r#"{"markdown": "*.md"}"#;
 
         let map: HashMap<String, Glob> =
-            serde_json::from_str(&string).unwrap();
+            serde_json::from_str(string).unwrap();
         assert_eq!(map["markdown"], Glob::new("*.md").unwrap());
     }
 
@@ -93,7 +93,7 @@ mod tests {
     fn glob_deserialize_owned() {
         let string = r#"{"markdown": "*.md"}"#;
 
-        let v: serde_json::Value = serde_json::from_str(&string).unwrap();
+        let v: serde_json::Value = serde_json::from_str(string).unwrap();
         let map: HashMap<String, Glob> = serde_json::from_value(v).unwrap();
         assert_eq!(map["markdown"], Glob::new("*.md").unwrap());
     }
@@ -102,7 +102,7 @@ mod tests {
     fn glob_deserialize_error() {
         let string = r#"{"error": "["}"#;
 
-        let map = serde_json::from_str::<HashMap<String, Glob>>(&string);
+        let map = serde_json::from_str::<HashMap<String, Glob>>(string);
 
         assert!(map.is_err());
     }

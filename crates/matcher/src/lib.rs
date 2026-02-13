@@ -250,7 +250,7 @@ impl LineTerminator {
     pub fn as_bytes(&self) -> &[u8] {
         match self.0 {
             LineTerminatorImp::Byte(ref byte) => std::slice::from_ref(byte),
-            LineTerminatorImp::CRLF => &[b'\r', b'\n'],
+            LineTerminatorImp::CRLF => b"\r\n",
         }
     }
 
@@ -261,7 +261,7 @@ impl LineTerminator {
     /// last byte is `\n`.
     #[inline]
     pub fn is_suffix(&self, slice: &[u8]) -> bool {
-        slice.last().map_or(false, |&b| b == self.as_byte())
+        slice.last().is_some_and(|&b| b == self.as_byte())
     }
 }
 
@@ -1130,7 +1130,7 @@ pub trait Matcher {
     }
 }
 
-impl<'a, M: Matcher> Matcher for &'a M {
+impl<M: Matcher> Matcher for &M {
     type Captures = M::Captures;
     type Error = M::Error;
 

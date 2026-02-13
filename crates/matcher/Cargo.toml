@@ -13,12 +13,13 @@ keywords = ["regex", "pattern", "trait"]
 license = "Unlicense OR MIT"
 autotests = false
 edition = "2024"
+rust-version = "1.93"
 
 [dependencies]
-memchr = "2.6.3"
+memchr = "2.7.6"
 
 [dev-dependencies]
-regex = "1.9.5"
+regex = "1.12.2"
 
 [[test]]
 name = "integration"

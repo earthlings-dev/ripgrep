@@ -692,7 +692,7 @@ impl<'p, 's, M: Matcher, W: io::Write> JSONSink<'p, 's, M, W> {
         self.replacer.clear();
         if self.json.config.replacement.is_some() {
             let replacement =
-                (*self.json.config.replacement).as_ref().map(|r| &*r).unwrap();
+                (*self.json.config.replacement).as_ref().map(|r| r).unwrap();
             self.replacer.replace_all(
                 searcher,
                 &self.matcher,
@@ -787,15 +787,14 @@ impl<'p, 's, M: Matcher, W: io::Write> Sink for JSONSink<'p, 's, M, W> {
         searcher: &Searcher,
         binary_byte_offset: u64,
     ) -> Result<bool, io::Error> {
-        if searcher.binary_detection().quit_byte().is_some() {
-            if let Some(ref path) = self.path {
+        if searcher.binary_detection().quit_byte().is_some()
+            && let Some(path) = self.path {
                 log::debug!(
                     "ignoring {path}: found binary data at \
                      offset {binary_byte_offset}",
                     path = path.display(),
                 );
             }
-        }
         Ok(true)
     }
 
@@ -905,7 +904,7 @@ mod tests {
 
     use super::{JSON, JSONBuilder};
 
-    const SHERLOCK: &'static [u8] = b"\
+    const SHERLOCK: &[u8] = b"\
 For the Doctor Watsons of this world, as opposed to the Sherlock
 Holmeses, success in the province of detective work must always
 be, to a very large extent, the result of luck. Sherlock Holmes
@@ -922,7 +921,7 @@ and exhibited clearly, with a label attached.
     fn binary_detection() {
         use grep_searcher::BinaryDetection;
 
-        const BINARY: &'static [u8] = b"\
+        const BINARY: &[u8] = b"\
 For the Doctor Watsons of this world, as opposed to the Sherlock
 Holmeses, success in the province of detective work must always
 be, to a very large extent, the result of luck. Sherlock Holmes

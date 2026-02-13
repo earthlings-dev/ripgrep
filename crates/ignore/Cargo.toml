@@ -13,29 +13,30 @@ readme = "README.md"
 keywords = ["glob", "ignore", "gitignore", "pattern", "file"]
 license = "Unlicense OR MIT"
 edition = "2024"
+rust-version = "1.93"
 
 [lib]
 name = "ignore"
 bench = false
 
 [dependencies]
-crossbeam-deque = "0.8.3"
+crossbeam-deque = "0.8.6"
 globset = { version = "0.4.18", path = "../globset" }
-log = "0.4.20"
-memchr = "2.6.3"
+log = "0.4.29"
+memchr = "2.7.6"
 same-file = "1.0.6"
-walkdir = "2.4.0"
+walkdir = "2.5.0"
 
 [dependencies.regex-automata]
-version = "0.4.0"
+version = "0.4.13"
 default-features = false
 features = ["std", "perf", "syntax", "meta", "nfa", "hybrid", "dfa-onepass"]
 
 [target.'cfg(windows)'.dependencies.winapi-util]
-version = "0.1.2"
+version = "0.1.11"
 
 [dev-dependencies]
-bstr = { version = "1.6.2", default-features = false, features = ["std"] }
+bstr = { version = "1.12.1", default-features = false, features = ["std"] }
 crossbeam-channel = "0.5.15"
 
 [features]

@@ -234,22 +234,22 @@ fn base64_standard(bytes: &[u8]) -> String {
 
     let mut out = String::new();
     let mut it = bytes.chunks_exact(3);
-    while let Some(chunk) = it.next() {
+    for chunk in it.by_ref() {
         let group24 = (usize::from(chunk[0]) << 16)
             | (usize::from(chunk[1]) << 8)
             | usize::from(chunk[2]);
         let index1 = (group24 >> 18) & 0b111_111;
         let index2 = (group24 >> 12) & 0b111_111;
         let index3 = (group24 >> 6) & 0b111_111;
-        let index4 = (group24 >> 0) & 0b111_111;
+        let index4 = group24 & 0b111_111;
         out.push(char::from(ALPHABET[index1]));
         out.push(char::from(ALPHABET[index2]));
         out.push(char::from(ALPHABET[index3]));
         out.push(char::from(ALPHABET[index4]));
     }
-    match it.remainder() {
-        &[] => {}
-        &[byte0] => {
+    match *it.remainder() {
+        [] => {}
+        [byte0] => {
             let group8 = usize::from(byte0);
             let index1 = (group8 >> 2) & 0b111_111;
             let index2 = (group8 << 4) & 0b111_111;
@@ -258,7 +258,7 @@ fn base64_standard(bytes: &[u8]) -> String {
             out.push('=');
             out.push('=');
         }
-        &[byte0, byte1] => {
+        [byte0, byte1] => {
             let group16 = (usize::from(byte0) << 8) | usize::from(byte1);
             let index1 = (group16 >> 10) & 0b111_111;
             let index2 = (group16 >> 4) & 0b111_111;

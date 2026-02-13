@@ -172,8 +172,7 @@ impl DirEntryInner {
         use self::DirEntryInner::*;
         match *self {
             Stdin => {
-                let err = Error::Io(io::Error::new(
-                    io::ErrorKind::Other,
+                let err = Error::Io(io::Error::other(
                     "<stdin> has no metadata",
                 ));
                 Err(err.with_path("<stdin>"))
@@ -299,7 +298,7 @@ impl DirEntryRaw {
         } else {
             fs::symlink_metadata(&self.path)
         }
-        .map_err(|err| Error::Io(io::Error::from(err)).with_path(&self.path))
+        .map_err(|err| Error::Io(err).with_path(&self.path))
     }
 
     fn file_type(&self) -> FileType {
@@ -324,7 +323,7 @@ impl DirEntryRaw {
         ent: &fs::DirEntry,
     ) -> Result<DirEntryRaw, Error> {
         let ty = ent.file_type().map_err(|err| {
-            let err = Error::Io(io::Error::from(err)).with_path(ent.path());
+            let err = Error::Io(err).with_path(ent.path());
             Error::WithDepth { depth, err: Box::new(err) }
         })?;
         DirEntryRaw::from_entry_os(depth, ent, ty)
@@ -1070,11 +1069,10 @@ impl Walk {
         if should_skip_entry(&self.ig, ent) {
             return Ok(true);
         }
-        if let Some(ref stdout) = self.skip {
-            if path_equals(ent, stdout)? {
+        if let Some(ref stdout) = self.skip
+            && path_equals(ent, stdout)? {
                 return Ok(true);
             }
-        }
         if self.max_filesize.is_some() && !ent.is_dir() {
             return Ok(skip_filesize(
                 self.max_filesize.unwrap(),
@@ -1082,11 +1080,10 @@ impl Walk {
                 &ent.metadata().ok(),
             ));
         }
-        if let Some(Filter(filter)) = &self.filter {
-            if !filter(ent) {
+        if let Some(Filter(filter)) = &self.filter
+            && !filter(ent) {
                 return Ok(true);
             }
-        }
         Ok(false)
     }
 }
@@ -1258,8 +1255,8 @@ pub trait ParallelVisitorBuilder<'s> {
     fn build(&mut self) -> Box<dyn ParallelVisitor + 's>;
 }
 
-impl<'a, 's, P: ParallelVisitorBuilder<'s>> ParallelVisitorBuilder<'s>
-    for &'a mut P
+impl<'s, P: ParallelVisitorBuilder<'s>> ParallelVisitorBuilder<'s>
+    for &mut P
 {
     fn build(&mut self) -> Box<dyn ParallelVisitor + 's> {
         (**self).build()
@@ -1471,7 +1468,7 @@ impl Work {
 
     /// Returns true if and only if this work item is a symlink.
     fn is_symlink(&self) -> bool {
-        self.dent.file_type().map_or(false, |ft| ft.is_symlink())
+        self.dent.file_type().is_some_and(|ft| ft.is_symlink())
     }
 
     /// Adds ignore rules for parent directories.
@@ -1698,7 +1695,7 @@ impl<'s> Worker<'s> {
             }
         };
 
-        if self.max_depth.map_or(false, |max| depth >= max) {
+        if self.max_depth.is_some_and(|max| depth >= max) {
             return WalkState::Skip;
         }
         for result in readdir {
@@ -1749,7 +1746,7 @@ impl<'s> Worker<'s> {
                 return self.visitor.visit(Err(err));
             }
         };
-        let is_symlink = dent.file_type().map_or(false, |ft| ft.is_symlink());
+        let is_symlink = dent.file_type().is_some_and(|ft| ft.is_symlink());
         if self.follow_links && is_symlink {
             let path = dent.path().to_path_buf();
             dent = match DirEntryRaw::from_path(depth, path, true) {
@@ -1758,11 +1755,10 @@ impl<'s> Worker<'s> {
                     return self.visitor.visit(Err(err));
                 }
             };
-            if dent.is_dir() {
-                if let Err(err) = check_symlink_loop(ig, dent.path(), depth) {
+            if dent.is_dir()
+                && let Err(err) = check_symlink_loop(ig, dent.path(), depth) {
                     return self.visitor.visit(Err(err));
                 }
-            }
         }
         // N.B. See analogous call in the single-threaded implementation about
         // why it's important for this to come before the checks below.
@@ -1919,10 +1915,7 @@ fn skip_filesize(
     path: &Path,
     ent: &Option<Metadata>,
 ) -> bool {
-    let filesize = match *ent {
-        Some(ref md) => Some(md.len()),
-        None => None,
-    };
+    let filesize = (*ent).as_ref().map(|md| md.len());
 
     if let Some(fs) = filesize {
         if fs > max_filesize {
@@ -2010,7 +2003,7 @@ fn walkdir_is_dir(dent: &walkdir::DirEntry) -> bool {
     if !dent.file_type().is_symlink() || dent.depth() > 0 {
         return false;
     }
-    dent.path().metadata().ok().map_or(false, |md| md.file_type().is_dir())
+    dent.path().metadata().ok().is_some_and(|md| md.file_type().is_dir())
 }
 
 /// Returns true if and only if the given path is on the same device as the
@@ -2172,7 +2165,7 @@ mod tests {
         wfile(td.path().join("a/bar"), "");
 
         let mut builder = WalkBuilder::new(td.path());
-        builder.add_custom_ignore_filename(&custom_ignore);
+        builder.add_custom_ignore_filename(custom_ignore);
         assert_paths(td.path(), &builder, &["bar", "a", "a/bar"]);
     }
 
@@ -2192,7 +2185,7 @@ mod tests {
         builder.git_ignore(false);
         builder.git_global(false);
         builder.git_exclude(false);
-        builder.add_custom_ignore_filename(&custom_ignore);
+        builder.add_custom_ignore_filename(custom_ignore);
         assert_paths(td.path(), &builder, &["bar", "a", "a/bar"]);
     }
 
@@ -2306,12 +2299,12 @@ mod tests {
         let mut builder = WalkBuilder::new(td.path());
         assert_paths(
             td.path(),
-            &builder.min_depth(Some(0)),
+            builder.min_depth(Some(0)),
             &["a", "a/b", "a/b/c", "foo", "a/foo", "a/b/foo", "a/b/c/foo"],
         );
         assert_paths(
             td.path(),
-            &builder.min_depth(Some(1)),
+            builder.min_depth(Some(1)),
             &["a", "a/b", "a/b/c", "foo", "a/foo", "a/b/foo", "a/b/c/foo"],
         );
         assert_paths(
@@ -2379,7 +2372,7 @@ mod tests {
         assert_paths(td.path(), &builder, &["a", "a/b", "a/b/foo", "z"]);
         assert_paths(
             td.path(),
-            &builder.follow_links(true),
+            builder.follow_links(true),
             &["a", "a/b", "a/b/foo", "z", "z/foo"],
         );
     }
@@ -2392,7 +2385,6 @@ mod tests {
 
         let dents = WalkBuilder::new(td.path().join("foo"))
             .build()
-            .into_iter()
             .collect::<Result<Vec<_>, _>>()
             .unwrap();
         assert_eq!(1, dents.len());
@@ -2414,7 +2406,7 @@ mod tests {
 
         let mut builder = WalkBuilder::new(td.path());
         assert_paths(td.path(), &builder, &["a", "a/b", "a/b/c"]);
-        assert_paths(td.path(), &builder.follow_links(true), &["a", "a/b"]);
+        assert_paths(td.path(), builder.follow_links(true), &["a", "a/b"]);
     }
 
     // It's a little tricky to test the 'same_file_system' option since
@@ -2461,12 +2453,12 @@ mod tests {
             return;
         }
         // We're the root, so the test won't check what we want it to.
-        if fs::read_dir(&dir_path).is_ok() {
+        if fs::read_dir(dir_path).is_ok() {
             return;
         }
 
         // Check that we can't descend but get an entry for the parent dir.
-        let builder = WalkBuilder::new(&dir_path);
+        let builder = WalkBuilder::new(dir_path);
         assert_paths(dir_path.parent().unwrap(), &builder, &["root"]);
     }
 
@@ -2486,7 +2478,7 @@ mod tests {
 
         assert_paths(
             td.path(),
-            &WalkBuilder::new(td.path())
+            WalkBuilder::new(td.path())
                 .filter_entry(|entry| entry.file_name() != OsStr::new("a")),
             &["x", "x/y", "x/y/foo"],
         );

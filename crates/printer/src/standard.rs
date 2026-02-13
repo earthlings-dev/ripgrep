@@ -781,11 +781,10 @@ impl<'p, 's, M: Matcher, W: WriteColor> Sink for StandardSink<'p, 's, M, W> {
             stats.add_matches(self.standard.matches.len() as u64);
             stats.add_matched_lines(mat.lines().count() as u64);
         }
-        if searcher.binary_detection().convert_byte().is_some() {
-            if self.binary_byte_offset.is_some() {
+        if searcher.binary_detection().convert_byte().is_some()
+            && self.binary_byte_offset.is_some() {
                 return Ok(false);
             }
-        }
         StandardImpl::from_match(searcher, self, mat).sink()?;
         Ok(true)
     }
@@ -802,11 +801,10 @@ impl<'p, 's, M: Matcher, W: WriteColor> Sink for StandardSink<'p, 's, M, W> {
             self.record_matches(searcher, ctx.bytes(), 0..ctx.bytes().len())?;
             self.replace(searcher, ctx.bytes(), 0..ctx.bytes().len())?;
         }
-        if searcher.binary_detection().convert_byte().is_some() {
-            if self.binary_byte_offset.is_some() {
+        if searcher.binary_detection().convert_byte().is_some()
+            && self.binary_byte_offset.is_some() {
                 return Ok(false);
             }
-        }
 
         StandardImpl::from_context(searcher, self, ctx).sink()?;
         Ok(true)
@@ -825,15 +823,14 @@ impl<'p, 's, M: Matcher, W: WriteColor> Sink for StandardSink<'p, 's, M, W> {
         searcher: &Searcher,
         binary_byte_offset: u64,
     ) -> Result<bool, io::Error> {
-        if searcher.binary_detection().quit_byte().is_some() {
-            if let Some(ref path) = self.path {
+        if searcher.binary_detection().quit_byte().is_some()
+            && let Some(ref path) = self.path {
                 log::debug!(
                     "ignoring {path}: found binary data at \
                      offset {binary_byte_offset}",
                     path = path.as_path().display(),
                 );
             }
-        }
         self.binary_byte_offset = Some(binary_byte_offset);
         Ok(true)
     }
@@ -933,12 +930,10 @@ impl<'a, M: Matcher, W: WriteColor> StandardImpl<'a, M, W> {
             } else {
                 self.sink_fast()
             }
+        } else if self.multi_line() && !self.is_context() {
+            self.sink_slow_multi_line()
         } else {
-            if self.multi_line() && !self.is_context() {
-                self.sink_slow_multi_line()
-            } else {
-                self.sink_slow()
-            }
+            self.sink_slow()
         }
     }
 
@@ -1332,20 +1327,18 @@ impl<'a, M: Matcher, W: WriteColor> StandardImpl<'a, M, W> {
             } else {
                 self.write(b"[Omitted long matching line]")?;
             }
-        } else {
-            if self.config().only_matching {
-                if self.is_context() {
-                    self.write(b"[Omitted long context line]")?;
-                } else {
-                    self.write(b"[Omitted long matching line]")?;
-                }
+        } else if self.config().only_matching {
+            if self.is_context() {
+                self.write(b"[Omitted long context line]")?;
             } else {
-                write!(
-                    self.wtr().borrow_mut(),
-                    "[Omitted long line with {} matches]",
-                    self.sunk.original_matches().len(),
-                )?;
+                self.write(b"[Omitted long matching line]")?;
             }
+        } else {
+            write!(
+                self.wtr().borrow_mut(),
+                "[Omitted long line with {} matches]",
+                self.sunk.original_matches().len(),
+            )?;
         }
         self.write_line_term()?;
         Ok(())
@@ -1521,7 +1514,7 @@ impl<'a, M: Matcher, W: WriteColor> StandardImpl<'a, M, W> {
     }
 
     fn trim_line_terminator(&self, buf: &[u8], line: &mut Match) {
-        trim_line_terminator(&self.searcher, buf, line);
+        trim_line_terminator(self.searcher, buf, line);
     }
 
     fn has_line_terminator(&self, buf: &[u8]) -> bool {
@@ -1560,7 +1553,7 @@ impl<'a, M: Matcher, W: WriteColor> StandardImpl<'a, M, W> {
     /// Returns true if and only if the given line exceeds the maximum number
     /// of columns set. If no maximum is set, then this always returns false.
     fn exceeds_max_columns(&self, line: &[u8]) -> bool {
-        self.config().max_columns.map_or(false, |m| line.len() as u64 > m)
+        self.config().max_columns.is_some_and(|m| line.len() as u64 > m)
     }
 
     /// Returns true if and only if the searcher may report matches over
@@ -1750,7 +1743,7 @@ mod tests {
 
     use super::{ColorSpecs, Standard, StandardBuilder};
 
-    const SHERLOCK: &'static str = "\
+    const SHERLOCK: &str = "\
 For the Doctor Watsons of this world, as opposed to the Sherlock
 Holmeses, success in the province of detective work must always
 be, to a very large extent, the result of luck. Sherlock Holmes
@@ -1760,7 +1753,7 @@ and exhibited clearly, with a label attached.\
 ";
 
     #[allow(dead_code)]
-    const SHERLOCK_CRLF: &'static str = "\
+    const SHERLOCK_CRLF: &str = "\
 For the Doctor Watsons of this world, as opposed to the Sherlock\r
 Holmeses, success in the province of detective work must always\r
 be, to a very large extent, the result of luck. Sherlock Holmes\r
